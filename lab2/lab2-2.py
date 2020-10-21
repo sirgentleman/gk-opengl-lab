@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 import sys
 import random
+import time
 
 from glfw.GLFW import *
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+viewport_width = 1000
+viewport_height = 1000
+rand_seed = time.time()
 
 def startup():
-    update_viewport(None, 400, 400)
+    update_viewport(None, viewport_width, viewport_height)
     glClearColor(0.5, 0.5, 0.5, 1.0)
 
 
@@ -17,43 +21,62 @@ def shutdown():
     pass
 
 def drawRectangle(x, y, a, b, d=0.0):
-    random.seed(x+y+a+b+d)
     color = [random.random(), random.random(), random.random()]
     color1 = [random.random(), random.random(), random.random()]
     color2 = [random.random(), random.random(), random.random()]
+    color3 = [random.random(), random.random(), random.random()]
 
     glBegin(GL_TRIANGLES)
     glColor(color)
     glVertex2f(x-((a+d)/2), y-((b+d)/2))
-    glColor(color1)
-    glVertex2f(x-((a+d)/2), y+((b+d)/2))
     glColor(color2)
-    glVertex2f(x+((a+d)/2), y+((b+d)/2))
+    glVertex2f(x-((a+d)/2), y+((b-d)/2))
+    glColor(color1)
+    glVertex2f(x+((a-d)/2), y+((b-d)/2))
     glEnd()
 
     glBegin(GL_TRIANGLES)
     glColor(color)
     glVertex2f(x-((a+d)/2), y-((b+d)/2))
+    glColor(color3)
+    glVertex2f(x+((a-d)/2), y-((b+d)/2))
     glColor(color1)
-    glVertex2f(x+((a+d)/2), y-((b+d)/2))
-    glColor(color2)
-    glVertex2f(x+((a+d)/2), y+((b+d)/2))
+    glVertex2f(x+((a-d)/2), y+((b-d)/2))
     glEnd()
 
-def render(time, rand_value):
+def drawCarpet(x, y, a, b, level):
+    random.seed((x+a+rand_seed)*(y+1)*level/b)
+    level -= 1
+    if(level == 0):
+        drawRectangle(x, y, a, b, a*(random.random()/2))
+        return
+    new_a = a/3
+    new_b = b/3
+    drawCarpet(x-new_a, y, new_a, new_b, level)
+    drawCarpet(x+new_a, y, new_a, new_b, level)
+
+    drawCarpet(x-(new_a), y+new_b, new_a, new_b, level)
+    drawCarpet(x, y+new_a, new_a, new_b, level)
+    drawCarpet(x+new_a, y+new_b, new_a, new_b, level)
+
+    drawCarpet(x-new_a, y-new_b, new_a, new_b, level)
+    drawCarpet(x, y-new_b, new_a, new_b, level)
+    drawCarpet(x+new_a, y-new_b, new_a, new_b, level)
+
+
+def render(time):
     glClear(GL_COLOR_BUFFER_BIT)
 
-    x = float(sys.argv[1])
-    y = float(sys.argv[2])
-    a = float(sys.argv[3])
-    b = float(sys.argv[4])
-
-    drawRectangle(x,y,a,b, rand_value)
+    drawCarpet(0,0,100,100, int(sys.argv[1]))
 
     glFlush()
 
 
 def update_viewport(window, width, height):
+
+    global rand_seed
+    rand_seed = time.time()
+
     if height == 0:
         height = 1
     if width == 0:
@@ -79,7 +102,7 @@ def main():
     if not glfwInit():
         sys.exit(-1)
 
-    window = glfwCreateWindow(400, 400, __file__, None, None)
+    window = glfwCreateWindow(viewport_width, viewport_height, __file__, None, None)
     if not window:
         glfwTerminate()
         sys.exit(-1)
@@ -88,10 +111,9 @@ def main():
     glfwSetFramebufferSizeCallback(window, update_viewport)
     glfwSwapInterval(1)
 
-    rand_value = random.random()
     startup()
     while not glfwWindowShouldClose(window):
-        render(glfwGetTime(), rand_value)
+        render(glfwGetTime())
         glfwSwapBuffers(window)
         glfwPollEvents()
     shutdown()
