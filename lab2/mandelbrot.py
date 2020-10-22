@@ -6,9 +6,14 @@ from glfw.GLFW import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-viewport_width = 1000
-viewport_height = 1000
-max_iterations = 50
+viewport_width = 500
+viewport_height = 500
+max_iterations = 200
+offset_x = -0.7
+offset_y = 0
+scale = 0.8
+mouse_x = 0
+mouse_y = 0
 
 def startup():
     update_viewport(None, viewport_width, viewport_height)
@@ -38,7 +43,7 @@ def drawSet(offset_x, offset_y, scale):
 
 def render(time):
     glClear(GL_COLOR_BUFFER_BIT)
-    drawSet(-0.7, 0, 0.8)
+    drawSet(offset_x, offset_y, scale)
     glFlush()
 
 
@@ -56,7 +61,30 @@ def update_viewport(window, width, height):
 
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
+    render(glfwGetTime())
 
+def mouse_position_callback(window, x, y):
+    global mouse_x, mouse_y
+    mouse_x = x
+    mouse_y = y
+
+def zoom_in():
+    print(mouse_x, mouse_y)
+    global offset_x, offset_y, scale
+    offset_x -= 2*(viewport_width/2-mouse_x)/scale/viewport_width
+    offset_y += 2*(viewport_height/2-mouse_y)/scale/viewport_height
+    scale *= 4
+
+def zoom_out():
+    print(mouse_x, mouse_y)
+    global offset_x, offset_y, scale
+    scale /= 6
+
+def mouse_button_callback(window, button, action, mods):
+    if button == GLFW_MOUSE_BUTTON_RIGHT and action == GLFW_PRESS:
+        zoom_in()
+    elif button == GLFW_MOUSE_BUTTON_LEFT and action == GLFW_PRESS:
+        zoom_out()
     render(glfwGetTime())
 
 
@@ -72,6 +100,8 @@ def main():
     glfwMakeContextCurrent(window)
     glfwSetFramebufferSizeCallback(window, update_viewport)
     glfwSwapInterval(1)
+    glfwSetMouseButtonCallback(window, mouse_button_callback)
+    glfwSetCursorPosCallback(window, mouse_position_callback)
 
     startup()
     while not glfwWindowShouldClose(window):
