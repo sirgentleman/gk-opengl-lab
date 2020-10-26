@@ -23,21 +23,25 @@ def startup():
 def shutdown():
     pass
 
-def mandelbrot(x, y):
-    c = complex(x,y)
-    prev_z = complex(0,0)
-
+def np_mandelbrot(np_input):
+    prev_z = np.zeros([viewport_width*2,viewport_height*2], dtype=complex)
+    return_array = np.zeros([viewport_width*2,viewport_height*2], dtype=int)
     for i in range(1, max_iterations):
-        prev_z = prev_z*prev_z + c
-        if abs(prev_z) >= 2:
-            return glColor((i/max_iterations), (i/max_iterations)-0.1, 0.1)
-    return glColor(1.0, 0.8, 0.0)
+        prev_z = np.add(np.square(prev_z), np_input)
+        temp = np.absolute(prev_z)
+        return_array[np.less(temp,2)] = i
+    return return_array
 
 def drawSet(offset_x, offset_y, scale):
     glBegin(GL_POINTS)
+    vertices = np.empty([viewport_width*2, viewport_height*2], dtype=complex)
     for x in range(-viewport_width,viewport_width):
         for y in range(-viewport_height, viewport_height):
-            mandelbrot(offset_x+(x/(scale*viewport_width)), offset_y+(y/(scale*viewport_height)))
+            vertices[x,y] = np.complex(offset_x+(x/(scale*viewport_width)), offset_y+(y/(scale*viewport_height)))
+    colors = np_mandelbrot(vertices)
+    for x in range(-viewport_width,viewport_width):
+        for y in range(-viewport_height, viewport_height):
+            glColor3f((colors[x,y]/max_iterations), (colors[x,y]/max_iterations)-0.1, 0.1)
             glVertex2f(x,y)
     glEnd()
 
