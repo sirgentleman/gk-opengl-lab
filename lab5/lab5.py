@@ -35,6 +35,18 @@ att_constant = 1.0
 att_linear = 0.05
 att_quadratic = 0.001
 
+# NOWE ZMIENNE
+
+change_mode = 0 # 0 - mat_ambient | 1 - mat_diffuse | 2 - mat_specular | 3 - light_ambient | 4 - light_diffuse | 5 - light_specular
+
+cur_mat_ambient = mat_ambient
+cur_mat_diffuse = mat_diffuse
+cur_mat_specular = mat_specular
+
+cur_light_ambient = light_ambient
+cur_light_diffuse = light_diffuse
+cur_light_specular = light_specular
+#cur_light_position = [0.0, 0.0, 10.0, 1.0]
 
 def startup():
     update_viewport(None, 400, 400)
@@ -116,10 +128,56 @@ def update_viewport(window, width, height):
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
+def change_color(color, isUp):
+    global cur_light_ambient, cur_light_diffuse, cur_light_specular, cur_mat_ambient, cur_mat_diffuse, cur_mat_specular
 
+    light_type = {0: GL_AMBIENT, 1: GL_DIFFUSE, 2: GL_SPECULAR}
+    cur_value = {0: cur_mat_ambient, 1: cur_mat_diffuse, 2: cur_mat_specular, 3: cur_light_ambient, 4: cur_light_diffuse, 5: cur_light_specular}
+    
+    if isUp == True:
+        cur_value[change_mode][color] = cur_value[change_mode][color]+0.1 if cur_value[change_mode][color]+0.1 <= 1.0 else 1.0
+    else:
+        cur_value[change_mode][color] = cur_value[change_mode][color]-0.1 if cur_value[change_mode][color]-0.1 >= 0.0 else 0
+
+    if change_mode < 3:
+        glMaterialfv(GL_FRONT, light_type[change_mode], cur_value[change_mode])
+    else:
+        glLightfv(GL_LIGHT0, light_type[change_mode-3], cur_value[change_mode])
+
+    print(cur_value[change_mode])
+
+# TODO: Change it to dictionary??
 def keyboard_key_callback(window, key, scancode, action, mods):
-    if key == GLFW_KEY_ESCAPE and action == GLFW_PRESS:
-        glfwSetWindowShouldClose(window, GLFW_TRUE)
+    global change_mode
+    
+    if action == GLFW_PRESS:
+        if key == GLFW_KEY_ESCAPE:
+            glfwSetWindowShouldClose(window, GLFW_TRUE)
+        elif key == GLFW_KEY_1:
+            change_mode = 0
+        elif key == GLFW_KEY_2:
+            change_mode = 1
+        elif key == GLFW_KEY_3:
+            change_mode = 2
+        elif key == GLFW_KEY_4:
+            change_mode = 3
+        elif key == GLFW_KEY_5:
+            change_mode = 4
+        elif key == GLFW_KEY_6: 
+            change_mode = 5
+        elif key == GLFW_KEY_Q:
+            change_color(0, True)
+        elif key == GLFW_KEY_A:
+            change_color(0, False)
+        elif key == GLFW_KEY_W:
+            change_color(1, True)
+        elif key == GLFW_KEY_S:
+            change_color(1, False)
+        elif key == GLFW_KEY_E:
+            change_color(2, True)
+        elif key == GLFW_KEY_D:
+            change_color(2, False)
+
 
 
 def mouse_motion_callback(window, x_pos, y_pos):
