@@ -32,6 +32,10 @@ att_constant = 1.0
 att_linear = 0.05
 att_quadratic = 0.001
 
+##DEFINED
+
+visible_walls = 4
+
 
 def startup():
     update_viewport(None, 400, 400)
@@ -97,7 +101,40 @@ def render(time):
     glVertex3f(-5.0, 5.0, 0.0)
     glTexCoord2f(1.0, 1.0)
     glVertex3f(5.0, 5.0, 0.0)
-    
+    glEnd()
+
+    glBegin(GL_TRIANGLES)
+    if(visible_walls > 0):
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(5.0, -5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 5.0)
+    ####
+    if(visible_walls > 1):
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(5.0, -5.0, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(5.0, 5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 5.0)
+    ####
+    if(visible_walls > 2):
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(5.0, 5.0, 0.0)
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-5.0, 5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 5.0)
+    ####
+    if(visible_walls > 3):
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(-5.0, 5.0, 0.0)
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-5.0, -5.0, 0.0)
+        glTexCoord2f(0.5, 0.5)
+        glVertex3f(0.0, 0.0, 5.0)
     glEnd()
 
     glFlush()
@@ -122,8 +159,12 @@ def update_viewport(window, width, height):
 
 
 def keyboard_key_callback(window, key, scancode, action, mods):
+    global visible_walls
+    
     if key == GLFW_KEY_ESCAPE and action == GLFW_PRESS:
         glfwSetWindowShouldClose(window, GLFW_TRUE)
+    elif key == GLFW_KEY_Q and action == GLFW_PRESS:
+        visible_walls = (visible_walls+1)%5
 
 
 def mouse_motion_callback(window, x_pos, y_pos):
