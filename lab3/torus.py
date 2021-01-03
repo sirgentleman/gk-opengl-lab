@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 import sys
 import numpy as np
-import math
+import math, random
 from glfw.GLFW import *
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-# ZADANIE NA 3.0
+# ZADANIE NA 5.0
+
+torus = 40  # liczba generowanych torusow
+N = 15      # liczba "punktow" w torusie (od 10 w dol zaczyna być coraz bardziej "kwadratowy")
+R = 0.3     # zewnetrzny promien torusa
+r = 0.1    # wewnetrzny promien torusa
+seed = random.randint(0, 2**32-1)
 
 def startup():
     update_viewport(None, 400, 400)
@@ -36,8 +42,8 @@ def axes():
 
     glEnd()
 
-def generate_egg_vertices(N):
-    
+# funkcja generujaca punkty dla torusa (blizniaca funkcja jak przy jajku)
+def generate_torus_vertices():
     distance = 1.0/(N-1)
     vertices = np.zeros((N, N, 3))
 
@@ -45,49 +51,58 @@ def generate_egg_vertices(N):
         for j in range(0, N):
             u = distance*i
             v = distance*j
-            vertices[i][j][0] = (-90*pow(u,5) + 225*pow(u,4) - 270*pow(u,3) + 180*pow(u,2) - 45*u) * math.cos(math.pi * v)
-            vertices[i][j][1] = 160 * pow(u,4) - 320 * pow(u,3) + 160 * pow(u,2)
-            vertices[i][j][2] = (-90*pow(u,5) + 225*pow(u,4) - 270*pow(u,3) + 180*pow(u,2) - 45*u) * math.sin(math.pi * v)
-
+            vertices[i][j][0] = (R + r*math.cos(2*math.pi*v))*math.cos(2*math.pi*u)
+            vertices[i][j][1] = (R + r*math.cos(2*math.pi*v))*math.sin(2*math.pi*u)
+            vertices[i][j][2] = r*math.sin(2*math.pi*v)
     return vertices
-
-def draw_egg_points(vertices, N):
-    offset = [0, -4.5, 0]
-
-    glColor3f(1.0, 1.0, 1.0)
-    glBegin(GL_POINTS)
-    for i in range(0, N):
-        for j in range(0, N):
-            glVertex(np.add(vertices[i][j], offset))
-    glEnd()
-
-def draw_egg_lines(vertices, N):
-    offset = [0, -4.5, 0]
-
-    glColor3f(1.0, 1.0, 1.0)
-    glBegin(GL_LINES)
+    
+# funkcja rysujaca torusa za pomoca GL_TRIANGLE_STRIP (blizniacza do jajka)
+def draw_torus(vertices, offset):
     for i in range(0, N-1):
-        for j in range(0, N-1):
+        glBegin(GL_TRIANGLE_STRIP)
+        for j in range(0, N):
+            glColor3f(j%2, 0, 1)
             glVertex(np.add(vertices[i][j], offset))
+            glColor3f(j%2, 0, 1)
             glVertex(np.add(vertices[i+1][j], offset))
-            glVertex(np.add(vertices[i][j], offset))
-            glVertex(np.add(vertices[i][j+1], offset))
-    glEnd()
+        glEnd()
 
-def render(N, vertices, time):
+# funkcja sluzaca do wygenerowania danych na temat krzywej, w tym waznego dla nas kąta (info[i][2])
+def generate_curve_info(torusAmount):
+    info = np.zeros((torusAmount,3))
+    for i in range(0,torusAmount):
+        # /4 aby toursy byly gesciej poukladane
+        info[i][0] = i/4
+        # funkcja wedlug ktorej torusy maja sie uklada (tutaj odpowiednio sparametryzowana sinusoida)
+        info[i][1] = 4*math.sin(1.5*info[i][0])
+        if i is not 0:
+            # wyliczanie kata jaki przyjmie nastepny torus (arctan z x/y)
+            info[i][2] = math.atan(info[i][1]/info[i][0])*(180/math.pi)
+        else:
+            info[i][2] = 0
+    return info
+
+def render(curveInfo, vertices, time):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     spin(time * 180 / math.pi)
-
     axes()
-    draw_egg_lines(vertices, N)
-    #draw_egg_points(vertices, N)
+    current_degree = 0
+    for i in range(torus):
+        glRotatef(curveInfo[i][2] - current_degree, 0, 1, 0)
+        if i%2 == 0:
+           glRotatef(90, 1, 0, 0)
+        glTranslatef((5*R/4), 0, 0)
+        draw_torus(vertices, [0,0,0])
+        if i%2 == 0:
+           glRotatef(-90, 1, 0, 0)
+        current_degree = curveInfo[i][2]
     glFlush()
 
 def spin(angle):
     glRotatef(angle, 1.0, 0.0, 0.0)
     glRotatef(angle, 0.0, 1.0, 0.0)
-    #glRotatef(angle, 0.0, 0.0, 1.0)
+    glRotatef(angle, 0.0, 0.0, 1.0)
 
 def update_viewport(window, width, height):
     if width == 0:
@@ -123,10 +138,10 @@ def main():
     glfwSwapInterval(1)
 
     startup()
-    N = 20
-    vertices = generate_egg_vertices(N)
+    vertices = generate_torus_vertices()
+    curveInfo = generate_curve_info(torus)
     while not glfwWindowShouldClose(window):
-        render(N, vertices, glfwGetTime())
+        render(curveInfo, vertices, glfwGetTime())
         glfwSwapBuffers(window)
         glfwPollEvents()
     shutdown()
