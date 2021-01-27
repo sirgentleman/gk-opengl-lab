@@ -19,6 +19,9 @@ vertex_colors_buffer = None
 
 P_matrix = None
 
+#
+# ZADANIE 4.5
+#
 
 def compile_shaders():
     vertex_shader_source = """
@@ -33,10 +36,11 @@ def compile_shaders():
         uniform mat4 P_matrix;
 
         void transform(int x, int y, int z) {
-            gl_Position = P_matrix * V_matrix * M_matrix * position + vec4(x,y,z,0);
+            gl_Position += vec4(x,y,z,0);
         }
 
         void main(void) {
+            gl_Position = P_matrix * V_matrix * M_matrix * position;
             transform(gl_InstanceID % 10, gl_InstanceID/10, 0);
             vertex_color = input_color;
         }

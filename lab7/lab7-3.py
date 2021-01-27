@@ -20,8 +20,14 @@ vertex_colors_buffer = None
 P_matrix = None
 
 #
-#   ZADANIE 3.0, 3.5, 4.0
+# ZADANIE 5.0
 #
+# Skorzystalem tutaj z generatora znalezionego w na forach o tematyce około GLSLowej (trochę zmieniona, dałem gl_InstanceID i gl_VertexID w funkcji).
+# Potem jeszcze dodatkowo ją trochę ograniczyłem mnożąć przez 0.25 (bez tego wszystko się rozpływało jak czekolada na słońcu).
+#
+# Szczegolnie mnie zaciekawiła ta funkcja, gdyż jest ona nazywana, jak to sami napisali w wątku, "a one-liner I found on the web somewhere".
+# Prezentuje całkiem znośne rezultaty i ostatecznie ostałem przy niej (pierwsza wersja używała Xorshifta).
+# Załączam całkiem ciekawy post na ten temat: https://stackoverflow.com/questions/12964279/whats-the-origin-of-this-glsl-rand-one-liner
 
 def compile_shaders():
     vertex_shader_source = """
@@ -35,8 +41,19 @@ def compile_shaders():
         uniform mat4 V_matrix;
         uniform mat4 P_matrix;
 
+        void transform(float x, float y, float z) {
+            gl_Position += vec4(x,y,z,0);
+        }
+
+
+        float randFloat() {
+            return fract(sin(dot(position.xy ,vec2(12.9898*gl_InstanceID,78.233*gl_VertexID))) * 43758.5453);
+        }
+
         void main(void) {
             gl_Position = P_matrix * V_matrix * M_matrix * position;
+            transform(gl_InstanceID % 10, gl_InstanceID/10, 0);
+            transform(randFloat()*0.25, randFloat()*0.25, 0);
             vertex_color = input_color;
         }
     """
@@ -236,7 +253,7 @@ def render(time):
     glClearBufferfv(GL_COLOR, 0, [0.0, 0.0, 0.0, 1.0])
     glClearBufferfi(GL_DEPTH_STENCIL, 0, 1.0, 0)
 
-    M_matrix = glm.mat4(1.0)
+    M_matrix = glm.rotate(glm.mat4(1.0), time, glm.vec3(1.0, 1.0, 0.0))
 
     V_matrix = glm.lookAt(
         glm.vec3(0.0, 0.0, 12.0),
@@ -252,14 +269,10 @@ def render(time):
     glUniformMatrix4fv(V_location, 1, GL_FALSE, glm.value_ptr(V_matrix))
     glUniformMatrix4fv(P_location, 1, GL_FALSE, glm.value_ptr(P_matrix))
 
-    for i in range(10):
-        for i in range(10):
-            M_matrix = glm.translate(M_matrix, glm.vec3(1.0, 0.0, 0.0))
-            M_matrix = glm.rotate(M_matrix, time, glm.vec3(1.0, 1.0, 0.0))
-            glUniformMatrix4fv(M_location, 1, GL_FALSE, glm.value_ptr(M_matrix))
-            glDrawArrays(GL_TRIANGLES, 0, 36)
-            M_matrix = glm.rotate(M_matrix, time, glm.vec3(-1.0, -1.0, 0.0))
-        M_matrix = glm.translate(M_matrix, glm.vec3(-10.0, 1.0, 0.0))
+    glUniformMatrix4fv(M_location, 1, GL_FALSE, glm.value_ptr(M_matrix))
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 100)
+
+    
 
 
 def update_viewport(window, width, height):
